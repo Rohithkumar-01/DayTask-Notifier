@@ -2,10 +2,10 @@
   "name": "daygrid-backend",
   "version": "1.0.0",
   "description": "DayGrid push notification backend",
-  "main": "server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node backend/server.js",
+    "build": "echo 'No build needed'"
   },
   "dependencies": {
     "cors": "^2.8.5",
