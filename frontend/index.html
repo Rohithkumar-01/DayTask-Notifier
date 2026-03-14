@@ -11,8 +11,9 @@
 <title>DayGrid — Daily Task Tracker</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
+:root{
   --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:#2a2a3d;
   --accent:#7c5cfc;--accent2:#fc5c7d;--accent3:#5cf8c8;
   --text:#e8e8f0;--muted:#6b6b8a;--warn:#fca45c;
@@ -22,7 +23,46 @@
 body{background:var(--bg);color:var(--text);font-family:var(--font-m);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(124,92,252,.08) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(252,92,125,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
 
-/* NAV */
+/* LOADING */
+#loading-screen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);gap:16px}
+#loading-screen.hidden{display:none}
+.loading-logo{font-family:var(--font-d);font-size:32px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.loading-dots{display:flex;gap:8px}
+.loading-dots span{width:8px;height:8px;border-radius:50%;animation:blink 1.2s ease-in-out infinite}
+.loading-dots span:nth-child(1){background:var(--accent)}
+.loading-dots span:nth-child(2){background:var(--accent2);animation-delay:.2s}
+.loading-dots span:nth-child(3){background:var(--accent3);animation-delay:.4s}
+.loading-txt{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+
+/* LOGIN */
+#login-page{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+#login-page.hidden{display:none}
+.login-box{width:100%;max-width:360px;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{font-family:var(--font-d);font-size:38px;font-weight:800;letter-spacing:-2px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:28px}
+.login-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px;display:block}
+.login-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-family:var(--font-m);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:20px}
+.login-inp::placeholder{color:var(--muted)}
+.login-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,252,.14)}
+.login-inp.err{border-color:var(--accent2)}
+.pin-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px;display:block}
+.pin-row{display:flex;gap:10px;justify-content:center;margin-bottom:16px}
+.pin-dot{width:56px;height:64px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:28px;font-weight:700;color:var(--muted);transition:all .15s}
+.pin-dot.filled{border-color:var(--accent);background:#1e1a2e;color:var(--accent)}
+.pin-dot.err-dot{border-color:var(--accent2);background:rgba(252,92,125,.08);animation:shake .3s}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.np-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--text);cursor:pointer;transition:all .15s;text-align:center;line-height:1}
+.np-btn:active{background:var(--surface2);border-color:var(--accent);transform:scale(.93)}
+.np-btn.del{font-size:18px;color:var(--muted)}
+.np-btn.enter{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;font-size:13px;font-family:var(--font-m);letter-spacing:1px}
+.np-btn.enter:active{opacity:.85;transform:scale(.93)}
+.login-err{font-size:12px;color:var(--accent2);text-align:center;margin-top:10px;min-height:16px}
+.login-welcome{font-size:13px;color:var(--muted);margin-bottom:18px}
+.login-welcome strong{color:var(--accent3)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* TABS */
 .tab-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,13,20,.94);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:0 8px 8px}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border:none;background:none;color:var(--muted);font-family:var(--font-m);font-size:9px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:10px;transition:color .2s}
 .tab-btn.active{color:var(--accent)}
@@ -33,10 +73,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .page.active{display:block}
 
 /* HEADER */
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
-.logo{font-family:var(--font-d);font-size:24px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.date-badge .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;text-align:right}
-.date-badge .val{font-family:var(--font-d);font-size:14px;font-weight:700;text-align:right}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.logo{font-family:var(--font-d);font-size:22px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.user-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 11px 5px 7px;cursor:pointer;transition:border-color .2s}
+.user-pill:active{border-color:var(--accent2)}
+.u-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.u-name{font-size:11px;color:var(--text)}
+.sync-txt{font-size:9px;margin-left:4px}
+.sync-txt.synced{color:var(--accent3)}
+.sync-txt.syncing{color:var(--warn)}
+.sync-txt.err{color:var(--accent2)}
 
 /* CLOCK */
 .clock-bar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;position:relative;overflow:hidden}
@@ -48,25 +94,24 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .next-txt{font-size:10px;color:var(--muted)}
 .next-txt strong{color:var(--warn)}
 
-/* PUSH STATUS BANNER */
-.push-banner{border-radius:var(--r);padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;border:1px solid;transition:opacity .2s}
+/* PUSH BANNER */
+.push-banner{border-radius:var(--r);padding:11px 13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;border:1px solid;transition:opacity .2s}
 .push-banner:active{opacity:.7}
 .push-banner.off{background:rgba(252,164,92,.1);border-color:rgba(252,164,92,.3);color:var(--warn)}
 .push-banner.on{background:rgba(92,248,200,.08);border-color:rgba(92,248,200,.25);color:var(--accent3)}
 .push-banner.denied{background:rgba(252,92,125,.1);border-color:rgba(252,92,125,.3);color:var(--accent2)}
 .push-banner span:nth-child(2){flex:1}
 
-/* SECTION LABEL */
+/* SECTION */
 .slbl{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .slbl::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* ADD FORM */
+/* FORM */
 .add-form{display:flex;gap:8px;margin-bottom:18px}
 .task-inp{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:var(--font-m);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}
 .task-inp::placeholder{color:var(--muted)}
 .task-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,252,.14)}
 .task-inp.err{border-color:var(--accent2);animation:shake .3s}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .add-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;width:46px;height:46px;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s}
 .add-btn:active{transform:scale(.9)}
 
@@ -123,7 +168,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .prog-bg{height:7px;background:var(--border);border-radius:10px;overflow:hidden}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:10px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
 
-/* REMINDER BOX */
+/* REMINDERS */
 .remind-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:18px}
 .rrow{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .rrow:last-child{margin-bottom:0}
@@ -133,12 +178,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .3s}
 .toggle.on::after{left:23px}
 .iv-sel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-m);font-size:12px;padding:6px 10px;outline:none;cursor:pointer}
-.iv-sel:focus{border-color:var(--accent)}
-.test-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;font-family:var(--font-m);font-size:11px;padding:7px 14px;cursor:pointer;transition:opacity .2s}
-.test-btn:active{opacity:.7}
+.test-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;font-family:var(--font-m);font-size:11px;padding:7px 14px;cursor:pointer}
 
 /* IN-APP NOTIF */
-.notif{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-130px);width:calc(100% - 28px);max-width:460px;background:linear-gradient(135deg,#1c1c2e,#13131a);border:1px solid var(--accent);border-radius:20px;padding:15px 16px;z-index:999;box-shadow:0 8px 40px rgba(124,92,252,.32);transition:transform .4s cubic-bezier(.34,1.56,.64,1);display:flex;gap:13px;align-items:flex-start}
+.notif{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-130px);width:calc(100% - 28px);max-width:460px;background:linear-gradient(135deg,#1c1c2e,#13131a);border:1px solid var(--accent);border-radius:20px;padding:15px 16px;z-index:1001;box-shadow:0 8px 40px rgba(124,92,252,.32);transition:transform .4s cubic-bezier(.34,1.56,.64,1);display:flex;gap:13px;align-items:flex-start}
 .notif.show{transform:translateX(-50%) translateY(0)}
 .n-icon{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
 .n-body{flex:1}
@@ -171,11 +214,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .ms-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:18px}
 .cal-dow{font-size:9px;color:var(--muted);text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:1px}
-.cal-day{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-m);cursor:pointer;transition:all .2s;border:1px solid transparent}
+.cal-day{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:all .2s;border:1px solid transparent}
 .cal-day.empty{opacity:0;pointer-events:none}
 .cal-day.today-cell{border-color:var(--accent);color:var(--accent);font-weight:600}
 .cal-day.has-data{background:var(--surface2)}
-.cal-day.has-data:active{transform:scale(.92)}
 .cal-day .day-num{font-size:11px;line-height:1;margin-bottom:2px}
 .cal-day .day-dot{width:5px;height:5px;border-radius:50%;margin-top:1px}
 .cal-day.pct-low .day-dot{background:var(--accent2)}
@@ -206,6 +248,46 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </head>
 <body>
 
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">DayGrid</div>
+  <div class="loading-dots"><span></span><span></span><span></span></div>
+  <div class="loading-txt" id="loading-txt">Starting up...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-page" class="hidden">
+  <div class="login-box">
+    <div class="login-logo">DayGrid</div>
+    <div class="login-sub">Your daily task tracker</div>
+    <div class="login-welcome" id="login-welcome"></div>
+    <label class="login-label">Your Name</label>
+    <input class="login-inp" id="login-name" type="text" placeholder="Enter your name..." autocomplete="off" maxlength="30">
+    <label class="pin-label">4-Digit Passkey</label>
+    <div class="pin-row">
+      <div class="pin-dot" id="pd0">—</div>
+      <div class="pin-dot" id="pd1">—</div>
+      <div class="pin-dot" id="pd2">—</div>
+      <div class="pin-dot" id="pd3">—</div>
+    </div>
+    <div class="numpad">
+      <button class="np-btn" onclick="numPress('1')">1</button>
+      <button class="np-btn" onclick="numPress('2')">2</button>
+      <button class="np-btn" onclick="numPress('3')">3</button>
+      <button class="np-btn" onclick="numPress('4')">4</button>
+      <button class="np-btn" onclick="numPress('5')">5</button>
+      <button class="np-btn" onclick="numPress('6')">6</button>
+      <button class="np-btn" onclick="numPress('7')">7</button>
+      <button class="np-btn" onclick="numPress('8')">8</button>
+      <button class="np-btn" onclick="numPress('9')">9</button>
+      <button class="np-btn del" onclick="numDel()">⌫</button>
+      <button class="np-btn" onclick="numPress('0')">0</button>
+      <button class="np-btn enter" onclick="doLogin()">ENTER</button>
+    </div>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
 <!-- IN-APP NOTIF -->
 <div class="notif" id="notif">
   <div class="n-icon">🔔</div>
@@ -217,29 +299,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <button class="n-close" onclick="closeNotif()">✕</button>
 </div>
 
-<!-- TODAY PAGE -->
+<!-- TODAY -->
 <div class="page active" id="page-today">
   <div class="header">
     <div class="logo">DayGrid</div>
-    <div class="date-badge">
-      <div class="lbl">Today</div>
-      <div class="val" id="hdr-date"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="sync-txt synced" id="sync-txt">● synced</span>
+      <div class="user-pill" onclick="logout()">
+        <div class="u-avatar" id="u-avatar">?</div>
+        <span class="u-name" id="u-name">—</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:2px">↩</span>
+      </div>
     </div>
   </div>
 
   <div class="clock-bar">
     <div>
       <div class="clock-time" id="clock">00<span>:</span>00<span>:</span>00</div>
-      <div class="next-txt" id="next-txt">Reminders loading...</div>
+      <div class="next-txt" id="next-txt">Loading...</div>
     </div>
     <div class="pulse"></div>
   </div>
 
-  <!-- PUSH STATUS -->
   <div class="push-banner off" id="push-banner" onclick="handlePushClick()">
-    <span>🔕</span>
-    <span id="push-banner-txt">Enable lockscreen notifications — tap to set up</span>
-    <span>→</span>
+    <span>🔕</span><span id="push-banner-txt">Enable lockscreen notifications</span><span>→</span>
   </div>
 
   <div class="slbl">Add Task</div>
@@ -270,15 +353,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
   <div class="slbl">Tasks</div>
   <div class="task-list" id="task-list">
-    <div class="empty-state"><div class="ei">📋</div><div>No tasks yet. Add tasks above!</div></div>
+    <div class="empty-state"><div class="ei">📋</div><div>No tasks yet!</div></div>
   </div>
 
   <div class="slbl">Reminder Settings</div>
   <div class="remind-box">
-    <div class="rrow">
-      <span class="rlbl">Reminders on</span>
-      <div class="toggle on" id="rem-toggle" onclick="toggleRem()"></div>
-    </div>
+    <div class="rrow"><span class="rlbl">Reminders on</span><div class="toggle on" id="rem-toggle" onclick="toggleRem()"></div></div>
     <div class="rrow">
       <span class="rlbl">Interval</span>
       <select class="iv-sel" id="iv-sel" onchange="updateIv()">
@@ -288,14 +368,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <option value="120">Every 2 hrs</option>
       </select>
     </div>
-    <div class="rrow">
-      <span class="rlbl">Send test notification now</span>
-      <button class="test-btn" onclick="sendTestPush()">🔔 Test</button>
-    </div>
+    <div class="rrow"><span class="rlbl">Test notification</span><button class="test-btn" onclick="sendTestPush()">🔔 Test</button></div>
   </div>
 </div>
 
-<!-- HISTORY PAGE -->
+<!-- HISTORY -->
 <div class="page" id="page-history">
   <div class="ph-title">Monthly View</div>
   <div class="ph-sub">Your progress across the month</div>
@@ -304,13 +381,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="month-lbl" id="month-lbl"></div>
     <button class="mnav-btn" onclick="nextMonth()">›</button>
   </div>
-  <div class="streak-banner">
-    <div class="streak-fire">🔥</div>
-    <div class="streak-info">
-      <div class="sv" id="streak-val">0</div>
-      <div class="sl">Day streak (tasks completed)</div>
-    </div>
-  </div>
+  <div class="streak-banner"><div class="streak-fire">🔥</div><div class="streak-info"><div class="sv" id="streak-val">0</div><div class="sl">Day streak</div></div></div>
   <div class="overall-prog">
     <div class="op-lbl"><span>Month Completion</span><strong id="op-pct">0%</strong></div>
     <div class="op-bg"><div class="op-fill" id="op-fill" style="width:0%"></div></div>
@@ -324,10 +395,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="slbl">Calendar</div>
   <div class="cal-grid" id="cal-grid"></div>
   <div class="day-detail" id="day-detail">
-    <div class="dd-title">
-      <span id="dd-title-txt">Day Details</span>
-      <button class="dd-close" onclick="closeDayDetail()">✕</button>
-    </div>
+    <div class="dd-title"><span id="dd-title-txt">Day Details</span><button class="dd-close" onclick="closeDayDetail()">✕</button></div>
     <div class="prog-hdr"><span>Completion</span><strong id="dd-pct">0%</strong></div>
     <div class="prog-bg"><div class="prog-fill" id="dd-fill" style="width:0%"></div></div>
     <div class="dd-tasks" id="dd-tasks"></div>
@@ -346,490 +414,422 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 </div>
 
-<!-- TAB BAR -->
+<!-- TABS -->
 <div class="tab-bar">
   <button class="tab-btn active" onclick="goPage('today',this)"><span class="ti">📋</span><span>Today</span></button>
   <button class="tab-btn" onclick="goPage('history',this)"><span class="ti">📅</span><span>History</span></button>
 </div>
 
 <script>
-// ════════════════════════════════════════════════
-// CONFIG — set your backend URL here after deploying
-// ════════════════════════════════════════════════
-const BACKEND_URL = https://daytask-notifier.onrender.com; 
-// ════════════════════════════════════════════════
-// STORAGE
-// ════════════════════════════════════════════════
-const SK = 'daygrid_v4';
-function load() {
-  try { const s = localStorage.getItem(SK); if (s) return JSON.parse(s); } catch(e) {}
-  return { days:{}, reminderOn:true, intervalMin:60, userId: genId() };
-}
-function save() { try { localStorage.setItem(SK, JSON.stringify(db)); } catch(e){} }
-let db = load();
-if (!db.userId) { db.userId = genId(); save(); }
+// ══════════════════════════════════════════════════
+// ⚙️  CONFIG — fill these in after Supabase setup
+// ══════════════════════════════════════════════════
+const SUPABASE_URL     = 'https://dwpglofayhaqrctikxxr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3cGdsb2ZheWhhcXJjdGlreHhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0Nzc2MzgsImV4cCI6MjA4OTA1MzYzOH0.UoyMYUsJtGreidkMFel4RND20IsfUAIumTTpB3c4MXs';
+const BACKEND_URL      = 'https://daytask-notifier.onrender.com';
 
-function genId() { return 'u_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+// ══════════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════════
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function getDay(key) {
-  if (!db.days[key]) db.days[key] = { tasks:[], grid:Array(10).fill(null) };
-  while (db.days[key].grid.length < 10) db.days[key].grid.push(null);
-  return db.days[key];
-}
-
-// ════════════════════════════════════════════════
-// NAVIGATION
-// ════════════════════════════════════════════════
-function goPage(name, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (name === 'history') renderHistory();
-}
-
-// ════════════════════════════════════════════════
-// CLOCK
-// ════════════════════════════════════════════════
-let notifTimer = null;
-let selectedCell = null;
-
-function updateClock() {
-  const n = new Date();
-  const H = String(n.getHours()).padStart(2,'0');
-  const M = String(n.getMinutes()).padStart(2,'0');
-  const S = String(n.getSeconds()).padStart(2,'0');
-  document.getElementById('clock').innerHTML = `${H}<span>:</span>${M}<span>:</span>${S}`;
-  if (!db.reminderOn) { document.getElementById('next-txt').textContent = 'Reminders paused'; return; }
-  const iv = db.intervalMin;
-  const sl = (iv - n.getMinutes() % iv) * 60 - n.getSeconds();
-  const mm = String(Math.floor(sl/60)).padStart(2,'0');
-  const ss = String(sl%60).padStart(2,'0');
-  document.getElementById('next-txt').innerHTML = `Next reminder in <strong>${mm}:${ss}</strong>`;
-}
-
-function setDate() {
-  const d = new Date();
-  document.getElementById('hdr-date').textContent =
-    d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
-}
-
-// ════════════════════════════════════════════════
-// SERVICE WORKER + PUSH SETUP
-// ════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+const LSK = 'dg_sess_v1';
+let me = null;          // logged-in user row
+let today = null;       // { tasks:[], grid:[] }
+let allDays = {};       // { "2025-03-14": { tasks, grid } }
+let cfg = { reminderOn:true, intervalMin:60 };
+let selCell = null;
+let ntTimer = null;
 let swReg = null;
+let viewMonth = new Date();
+let pinBuf = '';
 
-async function initSW() {
-  if (!('serviceWorker' in navigator)) {
-    updateBanner('denied', '⚠️ Service workers not supported in this browser');
-    return;
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const ago = iso => {
+  const d = Math.floor((Date.now()-new Date(iso))/60000);
+  return d<1?'just now':d<60?d+'m ago':Math.floor(d/60)+'h ago';
+};
+const todayKey = () => {
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const hashPin = (name,pin) => {
+  const s = name.toLowerCase().trim()+':'+pin;
+  let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
+  return Math.abs(h).toString(36);
+};
+const setLoad = txt => { document.getElementById('loading-txt').textContent = txt||'Loading...'; };
+const setSync = s => {
+  const el=document.getElementById('sync-txt'); if(!el)return;
+  if(s==='synced'){el.textContent='● synced';el.className='sync-txt synced';}
+  else if(s==='syncing'){el.textContent='◌ syncing';el.className='sync-txt syncing';}
+  else{el.textContent='✕ offline';el.className='sync-txt err';}
+};
+
+// ══════════════════════════════════════════════════
+// SESSION
+// ══════════════════════════════════════════════════
+const getSess = () => { try{return JSON.parse(localStorage.getItem(LSK));}catch(e){return null;} };
+const saveSess = u => localStorage.setItem(LSK, JSON.stringify({id:u.id,name:u.name}));
+const clearSess = () => localStorage.removeItem(LSK);
+
+// ══════════════════════════════════════════════════
+// PIN UI
+// ══════════════════════════════════════════════════
+function numPress(d){
+  if(pinBuf.length>=4)return;
+  pinBuf+=d; renderPin();
+  if(pinBuf.length===4) setTimeout(doLogin,180);
+}
+function numDel(){
+  pinBuf=pinBuf.slice(0,-1); renderPin();
+  document.getElementById('login-err').textContent='';
+  document.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('err-dot'));
+}
+function renderPin(){
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('pd'+i);
+    if(i<pinBuf.length){el.textContent='●';el.classList.add('filled');el.classList.remove('err-dot');}
+    else{el.textContent='—';el.classList.remove('filled','err-dot');}
   }
-  try {
-    swReg = await navigator.serviceWorker.register('/sw.js');
-    console.log('[SW] Registered', swReg.scope);
-    await checkPushStatus();
-  } catch(e) {
-    console.error('[SW] Registration failed', e);
-    updateBanner('denied', '⚠️ Service worker failed: ' + e.message);
+}
+function pinError(msg){
+  document.getElementById('login-err').textContent=msg;
+  document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('err-dot'));
+  pinBuf=''; setTimeout(renderPin,600);
+}
+
+// ══════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════
+function showLogin(){
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+  renderPin();
+  const sess=getSess();
+  if(sess?.name){
+    document.getElementById('login-name').value=sess.name;
+    document.getElementById('login-welcome').innerHTML=`Welcome back, <strong>${esc(sess.name)}</strong> 👋`;
   }
 }
 
-async function checkPushStatus() {
-  if (!('PushManager' in window)) {
-    updateBanner('denied', '⚠️ Push not supported in this browser');
-    return;
-  }
-  const perm = Notification.permission;
-  if (perm === 'granted') {
-    // Check if already subscribed
-    const sub = await swReg.pushManager.getSubscription();
-    if (sub) {
-      updateBanner('on', '✅ Lockscreen notifications active');
-      // Re-sync subscription with backend on every load
-      await syncSubscription(sub);
-    } else {
-      updateBanner('off', '🔔 Tap to enable lockscreen notifications');
-    }
-  } else if (perm === 'denied') {
-    updateBanner('denied', '🚫 Notifications blocked — enable in Android settings');
+async function doLogin(){
+  const name=document.getElementById('login-name').value.trim();
+  const pin=pinBuf;
+  const errEl=document.getElementById('login-err');
+  errEl.style.color='var(--accent2)';
+  if(!name){document.getElementById('login-name').classList.add('err');errEl.textContent='Enter your name';pinBuf='';renderPin();return;}
+  if(pin.length<4){errEl.textContent='Enter 4-digit passkey';return;}
+  errEl.style.color='var(--accent3)';errEl.textContent='Checking...';
+  const hash=hashPin(name,pin);
+
+  // Look up user
+  const {data:users,error}=await supa.from('users').select('*').eq('name_lower',name.toLowerCase().trim()).eq('passkey_hash',hash);
+  if(error){errEl.style.color='var(--accent2)';errEl.textContent='DB error: '+error.message;pinBuf='';renderPin();return;}
+
+  if(users&&users.length>0){
+    me=users[0]; onLoginOK();
   } else {
-    updateBanner('off', '🔔 Tap to enable lockscreen notifications');
+    // Create new user
+    const {data:nu,error:ce}=await supa.from('users').insert([{name,name_lower:name.toLowerCase().trim(),passkey_hash:hash,created_at:new Date().toISOString()}]).select().single();
+    if(ce){errEl.style.color='var(--accent2)';errEl.textContent='Could not create: '+ce.message;pinBuf='';renderPin();return;}
+    me=nu; onLoginOK();
   }
 }
 
-function updateBanner(state, msg) {
-  const b = document.getElementById('push-banner');
-  const t = document.getElementById('push-banner-txt');
-  b.className = 'push-banner ' + state;
-  t.textContent = msg;
-  if (state === 'on') b.style.cursor = 'default';
+function onLoginOK(){
+  saveSess(me);
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('u-name').textContent=me.name;
+  document.getElementById('u-avatar').textContent=me.name[0].toUpperCase();
+  pinBuf=''; renderPin();
+  document.getElementById('login-err').textContent='';
+  startApp();
 }
 
-async function handlePushClick() {
-  if (!swReg) { showNotif('Loading...','Service worker is still loading, try again.'); return; }
-  const perm = Notification.permission;
-  if (perm === 'denied') {
-    showNotif('Blocked 🚫','Go to Android Settings → Apps → Chrome → Notifications → Allow');
-    return;
-  }
-  if (perm === 'granted') {
-    const sub = await swReg.pushManager.getSubscription();
-    if (sub) { showNotif('Already Active ✅','Lockscreen notifications are working!'); return; }
-  }
-  await subscribeToPush();
+function logout(){
+  if(!confirm('Log out?'))return;
+  clearSess(); me=null; today=null; allDays={};
+  pinBuf=''; renderPin();
+  document.getElementById('login-name').value='';
+  document.getElementById('login-welcome').textContent='';
+  document.getElementById('login-page').classList.remove('hidden');
+  goPage('today', document.querySelector('.tab-btn'));
 }
 
-async function subscribeToPush() {
-  try {
-    // 1. Ask browser for notification permission
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') {
-      updateBanner('denied', '🚫 Permission denied');
-      showNotif('Denied','Enable notifications in your browser settings.');
-      return;
-    }
-
-    // 2. Get VAPID public key from backend
-    let vapidKey;
-    try {
-      const res = await fetch(`${BACKEND_URL}/vapid-public-key`);
-      const data = await res.json();
-      vapidKey = data.publicKey;
-    } catch(e) {
-      showNotif('Backend Error ⚠️','Cannot reach the backend. Make sure BACKEND_URL is set correctly in index.html');
-      return;
-    }
-
-    // 3. Subscribe browser to push
-    const sub = await swReg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey)
-    });
-
-    // 4. Send subscription to backend
-    await syncSubscription(sub);
-    updateBanner('on', '✅ Lockscreen notifications active!');
-    showNotif('Done! 🎉','You\'ll now get reminders on your lockscreen even when the app is closed.');
-  } catch(e) {
-    console.error('Push subscribe error:', e);
-    showNotif('Error','Could not enable push: ' + e.message);
-  }
+// ══════════════════════════════════════════════════
+// SUPABASE DATA
+// ══════════════════════════════════════════════════
+async function loadToday(){
+  const {data,error}=await supa.from('days').select('*').eq('user_id',me.id).eq('date_key',todayKey()).single();
+  if(error||!data){today={tasks:[],grid:Array(10).fill(null)};}
+  else{today={tasks:data.tasks||[],grid:data.grid||Array(10).fill(null)};while(today.grid.length<10)today.grid.push(null);}
+}
+async function saveToday(){
+  setSync('syncing');
+  const {error}=await supa.from('days').upsert({user_id:me.id,date_key:todayKey(),tasks:today.tasks,grid:today.grid,updated_at:new Date().toISOString()},{onConflict:'user_id,date_key'});
+  if(error){console.error(error);setSync('err');}
+  else{setSync('synced');allDays[todayKey()]={tasks:today.tasks,grid:today.grid};}
+}
+async function loadAllDays(){
+  const {data,error}=await supa.from('days').select('date_key,tasks,grid').eq('user_id',me.id);
+  if(!error&&data){allDays={};data.forEach(d=>{allDays[d.date_key]={tasks:d.tasks||[],grid:d.grid||[]};});}
+}
+async function loadCfg(){
+  const {data,error}=await supa.from('settings').select('*').eq('user_id',me.id).single();
+  if(!error&&data){cfg.reminderOn=data.reminder_on!==false;cfg.intervalMin=data.interval_min||60;}
+  document.getElementById('iv-sel').value=cfg.intervalMin;
+  document.getElementById('rem-toggle').className='toggle'+(cfg.reminderOn?' on':'');
+}
+async function saveCfg(){
+  await supa.from('settings').upsert({user_id:me.id,reminder_on:cfg.reminderOn,interval_min:cfg.intervalMin,updated_at:new Date().toISOString()},{onConflict:'user_id'});
 }
 
-async function syncSubscription(sub) {
-  const day = getDay(todayKey());
-  try {
-    await fetch(`${BACKEND_URL}/subscribe`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        userId: db.userId,
-        subscription: sub.toJSON(),
-        tasks: day.tasks,
-        grid: day.grid,
-        intervalMin: db.intervalMin,
-        reminderOn: db.reminderOn
-      })
-    });
-  } catch(e) {
-    console.warn('Sync failed (backend offline?):', e.message);
-  }
+// ══════════════════════════════════════════════════
+// APP START
+// ══════════════════════════════════════════════════
+async function startApp(){
+  document.getElementById('loading-screen').classList.remove('hidden');
+  setLoad('Loading your data...');
+  await Promise.all([loadToday(),loadAllDays(),loadCfg()]);
+  document.getElementById('loading-screen').classList.add('hidden');
+  setDate(); buildGrid(); renderTasks(); updateStats();
+  updateClock(); setInterval(updateClock,1000); setInterval(renderTasks,60000);
+  await initSW();
 }
 
-async function pushTaskUpdate() {
-  if (!swReg) return;
-  const sub = await swReg.pushManager.getSubscription();
-  if (!sub) return;
-  const day = getDay(todayKey());
-  try {
-    await fetch(`${BACKEND_URL}/update-tasks`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        userId: db.userId,
-        tasks: day.tasks,
-        grid: day.grid,
-        intervalMin: db.intervalMin,
-        reminderOn: db.reminderOn
-      })
-    });
-  } catch(e) {}
+// ══════════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════════
+function goPage(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(n==='history')renderHistory();
 }
 
-async function sendTestPush() {
-  if (!swReg) { showNotif('Not ready','Service worker loading...'); return; }
-  const sub = await swReg.pushManager.getSubscription();
-  if (!sub) { showNotif('Not subscribed','Tap the banner at the top to enable notifications first.'); return; }
-  try {
-    const r = await fetch(`${BACKEND_URL}/test-notify/${db.userId}`, { method:'POST' });
-    if (r.ok) showNotif('Sent! 📬','Check your lockscreen / notification shade.');
-    else showNotif('Error','Backend returned an error. Check BACKEND_URL.');
-  } catch(e) {
-    showNotif('Error','Could not reach backend: ' + e.message);
-  }
+// ══════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').innerHTML=`${String(n.getHours()).padStart(2,'0')}<span>:</span>${String(n.getMinutes()).padStart(2,'0')}<span>:</span>${String(n.getSeconds()).padStart(2,'0')}`;
+  if(!cfg.reminderOn){document.getElementById('next-txt').textContent='Reminders paused';return;}
+  const iv=cfg.intervalMin;
+  const sl=(iv-n.getMinutes()%iv)*60-n.getSeconds();
+  document.getElementById('next-txt').innerHTML=`Next reminder in <strong>${String(Math.floor(sl/60)).padStart(2,'0')}:${String(sl%60).padStart(2,'0')}</strong>`;
+}
+function setDate(){
+  const el=document.getElementById('hdr-date');
+  if(el)el.textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
 }
 
-// Convert VAPID key
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-}
-
-// ════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // GRID
-// ════════════════════════════════════════════════
-function buildGrid() {
-  const day = getDay(todayKey());
-  const g = document.getElementById('grid');
-  g.innerHTML = '';
-  let filled = 0;
-  day.grid.slice(0,10).forEach((cell, i) => {
-    const div = document.createElement('div');
-    div.className = 'gcell';
-    div.dataset.i = i;
-    if (cell) {
+// ══════════════════════════════════════════════════
+function buildGrid(){
+  if(!today)return;
+  const g=document.getElementById('grid'); g.innerHTML='';
+  let filled=0;
+  today.grid.slice(0,10).forEach((cell,i)=>{
+    const div=document.createElement('div'); div.className='gcell';
+    if(cell){
       filled++;
-      const task = day.tasks[cell.taskIdx];
-      const name = task ? task.name : '(deleted)';
-      div.classList.add(cell.done ? 'done' : 'filled');
-      div.onclick = () => openModal(i);
-      div.innerHTML = `<div class="cell-top"><span class="cell-n">#${i+1}</span><span>${cell.done?'✅':'🔵'}</span></div><div class="cell-txt ${cell.done?'done-txt':''}">${esc(name)}</div>`;
+      const t=today.tasks[cell.taskIdx];
+      div.classList.add(cell.done?'done':'filled');
+      div.onclick=()=>openModal(i);
+      div.innerHTML=`<div class="cell-top"><span class="cell-n">#${i+1}</span><span>${cell.done?'✅':'🔵'}</span></div><div class="cell-txt ${cell.done?'done-txt':''}">${esc(t?t.name:'deleted')}</div>`;
     } else {
       div.classList.add('empty-cell');
-      div.innerHTML = `<div class="cell-top"><span class="cell-n">#${i+1}</span><span style="font-size:11px;color:var(--border)">○</span></div><div class="cell-empty">empty</div>`;
+      div.innerHTML=`<div class="cell-top"><span class="cell-n">#${i+1}</span><span style="color:var(--border)">○</span></div><div class="cell-empty">empty</div>`;
     }
     g.appendChild(div);
   });
-  document.getElementById('grid-ct').textContent = `${filled} / 10 filled`;
+  document.getElementById('grid-ct').textContent=`${filled} / 10 filled`;
+}
+async function clearGrid(){
+  if(!confirm('Clear all assignments?'))return;
+  today.grid=Array(10).fill(null);
+  buildGrid();renderTasks();updateStats();await saveToday();
 }
 
-function clearGrid() {
-  if (!confirm('Clear all task assignments?')) return;
-  const day = getDay(todayKey());
-  day.grid = Array(10).fill(null);
-  save(); buildGrid(); renderTaskList(); updateStats(); pushTaskUpdate();
-}
-
-// ════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // TASKS
-// ════════════════════════════════════════════════
-function addTask() {
-  const inp = document.getElementById('task-inp');
-  const name = inp.value.trim();
-  if (!name || name.length < 2) { inp.classList.add('err'); setTimeout(()=>inp.classList.remove('err'),400); return; }
-  const day = getDay(todayKey());
-  const filled = day.grid.filter(c=>c!==null).length;
-  if (filled >= 10) { showNotif('Grid Full 📋','All 10 cells filled. Complete or clear tasks first.'); return; }
-  const taskIdx = day.tasks.length;
-  day.tasks.push({ name, added: new Date().toISOString() });
-  const ei = day.grid.findIndex(c=>c===null);
-  if (ei !== -1) day.grid[ei] = { taskIdx, done:false };
-  inp.value = '';
-  save(); buildGrid(); renderTaskList(); updateStats(); pushTaskUpdate();
+// ══════════════════════════════════════════════════
+async function addTask(){
+  const inp=document.getElementById('task-inp');
+  const name=inp.value.trim();
+  if(!name||name.length<2){inp.classList.add('err');setTimeout(()=>inp.classList.remove('err'),400);return;}
+  if(today.grid.filter(c=>c!==null).length>=10){showNotif('Grid Full','Complete or clear tasks first.');return;}
+  const idx=today.tasks.length;
+  today.tasks.push({name,added:new Date().toISOString()});
+  const ei=today.grid.findIndex(c=>c===null);
+  if(ei!==-1)today.grid[ei]={taskIdx:idx,done:false};
+  inp.value='';
+  buildGrid();renderTasks();updateStats();await saveToday();
 }
-
-function delTask(taskIdx) {
-  const day = getDay(todayKey());
-  day.tasks.splice(taskIdx, 1);
-  day.grid = day.grid.map(c => {
-    if (!c) return null;
-    if (c.taskIdx === taskIdx) return null;
-    if (c.taskIdx > taskIdx) return {...c, taskIdx: c.taskIdx-1};
-    return c;
-  });
-  save(); buildGrid(); renderTaskList(); updateStats(); pushTaskUpdate();
+async function delTask(i){
+  today.tasks.splice(i,1);
+  today.grid=today.grid.map(c=>{if(!c)return null;if(c.taskIdx===i)return null;if(c.taskIdx>i)return{...c,taskIdx:c.taskIdx-1};return c;});
+  buildGrid();renderTasks();updateStats();await saveToday();
 }
-
-function toggleDone(taskIdx) {
-  const day = getDay(todayKey());
-  const ci = day.grid.findIndex(c=>c&&c.taskIdx===taskIdx);
-  if (ci !== -1) day.grid[ci].done = !day.grid[ci].done;
-  save(); buildGrid(); renderTaskList(); updateStats(); pushTaskUpdate();
+async function toggleDone(i){
+  const ci=today.grid.findIndex(c=>c&&c.taskIdx===i);
+  if(ci!==-1)today.grid[ci].done=!today.grid[ci].done;
+  buildGrid();renderTasks();updateStats();await saveToday();
 }
-
-function renderTaskList() {
-  const day = getDay(todayKey());
-  const list = document.getElementById('task-list');
-  if (!day.tasks.length) {
-    list.innerHTML = `<div class="empty-state"><div class="ei">📋</div><div>No tasks yet. Add tasks above!</div></div>`;
-    return;
-  }
-  list.innerHTML = '';
-  day.tasks.forEach((t,i) => {
-    const ci = day.grid.findIndex(c=>c&&c.taskIdx===i);
-    const isDone = ci !== -1 && day.grid[ci].done;
-    const div = document.createElement('div');
-    div.className = 'ti-item'+(isDone?' ti-done':'');
-    div.innerHTML = `
-      <div class="chk ${isDone?'on':''}" onclick="toggleDone(${i})"></div>
-      <div class="ti-info">
-        <div class="ti-name">${esc(t.name)}</div>
-        <div class="ti-tags">
-          ${ci!==-1?`<span class="tag tc">Cell #${ci+1}</span>`:'<span class="tag tc">Unassigned</span>'}
-          <span class="tag tw">${ago(t.added)}</span>
-          ${isDone?'<span class="tag tg">Done ✓</span>':''}
-        </div>
-      </div>
-      <button class="del-btn" onclick="delTask(${i})">×</button>`;
+function renderTasks(){
+  if(!today)return;
+  const list=document.getElementById('task-list');
+  if(!today.tasks.length){list.innerHTML=`<div class="empty-state"><div class="ei">📋</div><div>No tasks yet. Add tasks above!</div></div>`;return;}
+  list.innerHTML='';
+  today.tasks.forEach((t,i)=>{
+    const ci=today.grid.findIndex(c=>c&&c.taskIdx===i);
+    const done=ci!==-1&&today.grid[ci].done;
+    const div=document.createElement('div');div.className='ti-item'+(done?' ti-done':'');
+    div.innerHTML=`<div class="chk ${done?'on':''}" onclick="toggleDone(${i})"></div><div class="ti-info"><div class="ti-name">${esc(t.name)}</div><div class="ti-tags">${ci!==-1?`<span class="tag tc">Cell #${ci+1}</span>`:'<span class="tag tc">Unassigned</span>'}<span class="tag tw">${ago(t.added)}</span>${done?'<span class="tag tg">Done ✓</span>':''}</div></div><button class="del-btn" onclick="delTask(${i})">×</button>`;
     list.appendChild(div);
   });
 }
-
-function updateStats() {
-  const day = getDay(todayKey());
-  const total = day.tasks.length;
-  const done = day.grid.filter(c=>c&&c.done).length;
-  document.getElementById('st-total').textContent = total;
-  document.getElementById('st-done').textContent = done;
-  document.getElementById('st-left').textContent = Math.max(0,total-done);
-  const pct = total > 0 ? Math.round(done/total*100) : 0;
-  document.getElementById('prog-pct').textContent = pct+'%';
-  document.getElementById('prog-fill').style.width = pct+'%';
+function updateStats(){
+  if(!today)return;
+  const total=today.tasks.length,done=today.grid.filter(c=>c&&c.done).length;
+  document.getElementById('st-total').textContent=total;
+  document.getElementById('st-done').textContent=done;
+  document.getElementById('st-left').textContent=Math.max(0,total-done);
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
 }
 
-// ════════════════════════════════════════════════
-// CELL MODAL
-// ════════════════════════════════════════════════
-function openModal(idx) {
-  selectedCell = idx;
-  const day = getDay(todayKey());
-  const cell = day.grid[idx];
-  document.getElementById('modal-title').textContent = `Grid Cell #${idx+1}`;
-  if (cell) {
-    const task = day.tasks[cell.taskIdx];
-    document.getElementById('modal-task').textContent = task ? task.name : '(deleted)';
-    document.querySelector('.mbtn-done').textContent = cell.done ? '↩ Mark Undone' : '✓ Mark Done';
-  } else {
-    document.getElementById('modal-task').textContent = 'No task assigned.';
-  }
+// ══════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════
+function openModal(idx){
+  selCell=idx;const cell=today.grid[idx];
+  document.getElementById('modal-title').textContent=`Grid Cell #${idx+1}`;
+  if(cell){const t=today.tasks[cell.taskIdx];document.getElementById('modal-task').textContent=t?t.name:'(deleted)';document.querySelector('.mbtn-done').textContent=cell.done?'↩ Mark Undone':'✓ Mark Done';}
+  else document.getElementById('modal-task').textContent='No task assigned.';
   document.getElementById('modal').classList.add('open');
 }
-function closeModal(e) {
-  if (!e || e.target===document.getElementById('modal')) {
-    document.getElementById('modal').classList.remove('open');
-    selectedCell = null;
-  }
-}
-function markDone() {
-  if (selectedCell===null) return;
-  const day = getDay(todayKey());
-  const cell = day.grid[selectedCell];
-  if (!cell) { closeModal(); return; }
-  cell.done = !cell.done;
-  save(); buildGrid(); renderTaskList(); updateStats(); pushTaskUpdate();
-  closeModal();
+function closeModal(e){if(!e||e.target===document.getElementById('modal')){document.getElementById('modal').classList.remove('open');selCell=null;}}
+async function markDone(){
+  if(selCell===null)return;
+  const cell=today.grid[selCell];if(!cell){closeModal();return;}
+  cell.done=!cell.done;buildGrid();renderTasks();updateStats();closeModal();await saveToday();
 }
 
-// ════════════════════════════════════════════════
-// IN-APP NOTIF
-// ════════════════════════════════════════════════
-function showNotif(title, msg) {
-  document.getElementById('n-title').textContent = title;
-  document.getElementById('n-msg').innerHTML = msg;
-  document.getElementById('n-time').textContent =
-    new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+// ══════════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════════
+function showNotif(title,msg){
+  document.getElementById('n-title').textContent=title;
+  document.getElementById('n-msg').innerHTML=msg;
+  document.getElementById('n-time').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('notif').classList.add('show');
-  clearTimeout(notifTimer);
-  notifTimer = setTimeout(closeNotif, 6000);
+  clearTimeout(ntTimer);ntTimer=setTimeout(closeNotif,6000);
 }
-function closeNotif() { document.getElementById('notif').classList.remove('show'); }
+function closeNotif(){document.getElementById('notif').classList.remove('show');}
+async function initSW(){
+  if(!('serviceWorker' in navigator))return;
+  try{swReg=await navigator.serviceWorker.register('/sw.js');await checkPush();}catch(e){console.error(e);}
+}
+async function checkPush(){
+  if(!('PushManager' in window)){updBanner('denied','⚠️ Push not supported');return;}
+  const p=Notification.permission;
+  if(p==='granted'){const s=await swReg.pushManager.getSubscription();if(s){updBanner('on','✅ Lockscreen notifications active');await syncSub(s);}else updBanner('off','🔔 Tap to enable lockscreen notifications');}
+  else if(p==='denied')updBanner('denied','🚫 Notifications blocked');
+  else updBanner('off','🔔 Tap to enable lockscreen notifications');
+}
+function updBanner(state,msg){
+  const b=document.getElementById('push-banner');b.className='push-banner '+state;
+  document.getElementById('push-banner-txt').textContent=msg;
+  if(state==='on')b.style.cursor='default';
+}
+async function handlePushClick(){
+  if(!swReg){showNotif('Loading...','Try again.');return;}
+  if(Notification.permission==='denied'){showNotif('Blocked','Enable in Android Settings → Apps → Chrome → Notifications');return;}
+  if(Notification.permission==='granted'){const s=await swReg.pushManager.getSubscription();if(s){showNotif('Active ✅','Already enabled!');return;}}
+  await subPush();
+}
+async function subPush(){
+  try{
+    const p=await Notification.requestPermission();if(p!=='granted'){updBanner('denied','Permission denied');return;}
+    let vk;try{const r=await fetch(`${BACKEND_URL}/vapid-public-key`);const d=await r.json();vk=d.publicKey;}catch(e){showNotif('Backend Error','Set BACKEND_URL in index.html');return;}
+    const s=await swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u8(vk)});
+    await syncSub(s);updBanner('on','✅ Lockscreen notifications active!');showNotif('Done! 🎉','You\'ll get lockscreen reminders now.');
+  }catch(e){showNotif('Error',e.message);}
+}
+async function syncSub(s){
+  if(!me||!today)return;
+  try{await fetch(`${BACKEND_URL}/subscribe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:me.id,subscription:s.toJSON(),tasks:today.tasks,grid:today.grid,intervalMin:cfg.intervalMin,reminderOn:cfg.reminderOn})});}catch(e){}
+}
+async function sendTestPush(){
+  if(!swReg){showNotif('Not ready','Try again.');return;}
+  const s=await swReg.pushManager.getSubscription();if(!s){showNotif('Not subscribed','Tap the banner first.');return;}
+  try{const r=await fetch(`${BACKEND_URL}/test-notify/${me.id}`,{method:'POST'});if(r.ok)showNotif('Sent! 📬','Check your lockscreen.');else showNotif('Error','Backend error.');}catch(e){showNotif('Error',e.message);}
+}
+function b64u8(b){const p='='.repeat((4-b.length%4)%4);const s=(b+p).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from([...atob(s)].map(c=>c.charCodeAt(0)));}
+async function toggleRem(){cfg.reminderOn=!cfg.reminderOn;document.getElementById('rem-toggle').className='toggle'+(cfg.reminderOn?' on':'');await saveCfg();}
+async function updateIv(){cfg.intervalMin=parseInt(document.getElementById('iv-sel').value);await saveCfg();}
 
-// ════════════════════════════════════════════════
-// REMINDER SETTINGS
-// ════════════════════════════════════════════════
-function toggleRem() {
-  db.reminderOn = !db.reminderOn;
-  document.getElementById('rem-toggle').className = 'toggle'+(db.reminderOn?' on':'');
-  save(); pushTaskUpdate();
-}
-function updateIv() {
-  db.intervalMin = parseInt(document.getElementById('iv-sel').value);
-  save(); pushTaskUpdate();
-}
-
-// ════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // HISTORY
-// ════════════════════════════════════════════════
-let viewMonth = new Date();
-
-function renderHistory() {
-  const yr = viewMonth.getFullYear(), mo = viewMonth.getMonth();
-  document.getElementById('month-lbl').textContent =
-    viewMonth.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-  const dim = new Date(yr,mo+1,0).getDate();
-  const today = new Date();
-  let active=0,tdone=0,ttasks=0,psum=0;
-  for (let d=1; d<=dim; d++) {
-    const key=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const day=db.days[key];
-    if (!day||!day.tasks.length) continue;
-    active++;
-    const dn=day.grid.filter(c=>c&&c.done).length;
-    tdone+=dn; ttasks+=day.tasks.length;
-    psum+=day.tasks.length>0?dn/day.tasks.length*100:0;
+// ══════════════════════════════════════════════════
+function renderHistory(){
+  const yr=viewMonth.getFullYear(),mo=viewMonth.getMonth();
+  document.getElementById('month-lbl').textContent=viewMonth.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const dim=new Date(yr,mo+1,0).getDate(),now=new Date();
+  let act=0,td=0,tt=0,ps=0;
+  for(let d=1;d<=dim;d++){
+    const k=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const day=allDays[k];if(!day||!day.tasks.length)continue;
+    act++;const dn=day.grid.filter(c=>c&&c.done).length;td+=dn;tt+=day.tasks.length;ps+=day.tasks.length>0?dn/day.tasks.length*100:0;
   }
-  const avg=active>0?Math.round(psum/active):0;
-  const mpct=ttasks>0?Math.round(tdone/ttasks*100):0;
-  document.getElementById('ms-active').textContent=active;
-  document.getElementById('ms-tasks').textContent=tdone;
-  document.getElementById('ms-total').textContent=ttasks;
-  document.getElementById('ms-pct').textContent=avg+'%';
-  document.getElementById('op-pct').textContent=mpct+'%';
-  document.getElementById('op-fill').style.width=mpct+'%';
+  const avg=act>0?Math.round(ps/act):0,mpct=tt>0?Math.round(td/tt*100):0;
+  document.getElementById('ms-active').textContent=act;document.getElementById('ms-tasks').textContent=td;
+  document.getElementById('ms-total').textContent=tt;document.getElementById('ms-pct').textContent=avg+'%';
+  document.getElementById('op-pct').textContent=mpct+'%';document.getElementById('op-fill').style.width=mpct+'%';
   document.getElementById('streak-val').textContent=calcStreak();
-  buildCal(yr,mo,dim,today);
+  buildCal(yr,mo,dim,now);
 }
-
-function buildCal(yr,mo,dim,today) {
-  const g=document.getElementById('cal-grid');
-  g.innerHTML='';
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
-    const el=document.createElement('div');el.className='cal-dow';el.textContent=d;g.appendChild(el);
-  });
+function buildCal(yr,mo,dim,now){
+  const g=document.getElementById('cal-grid');g.innerHTML='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;g.appendChild(el);});
   const fd=new Date(yr,mo,1).getDay();
-  for (let i=0;i<fd;i++){const el=document.createElement('div');el.className='cal-day empty';g.appendChild(el);}
-  for (let d=1;d<=dim;d++){
-    const key=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const day=db.days[key];
-    const el=document.createElement('div');el.className='cal-day';
-    const isT=today.getFullYear()===yr&&today.getMonth()===mo&&today.getDate()===d;
-    if(isT)el.classList.add('today-cell');
+  for(let i=0;i<fd;i++){const el=document.createElement('div');el.className='cal-day empty';g.appendChild(el);}
+  for(let d=1;d<=dim;d++){
+    const k=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const day=allDays[k];const el=document.createElement('div');el.className='cal-day';
+    if(now.getFullYear()===yr&&now.getMonth()===mo&&now.getDate()===d)el.classList.add('today-cell');
     if(day&&day.tasks.length){
-      el.classList.add('has-data');
-      const dn=day.grid.filter(c=>c&&c.done).length;
-      const pct=dn/day.tasks.length*100;
+      el.classList.add('has-data');const dn=day.grid.filter(c=>c&&c.done).length;const pct=dn/day.tasks.length*100;
       el.classList.add(pct<40?'pct-low':pct<75?'pct-mid':pct<100?'pct-high':'pct-100');
-      el.onclick=()=>openDayDetail(key,d,mo+1,yr);
+      el.onclick=()=>openDayDetail(k,d,mo+1,yr);
     }
     el.innerHTML=`<div class="day-num">${d}</div>${day&&day.tasks.length?'<div class="day-dot"></div>':''}`;
     g.appendChild(el);
   }
 }
-
-function openDayDetail(key,d,mo,yr){
-  const day=db.days[key]; if(!day||!day.tasks.length)return;
-  const dn=day.grid.filter(c=>c&&c.done).length;
-  const pct=day.tasks.length>0?Math.round(dn/day.tasks.length*100):0;
+function openDayDetail(k,d,mo,yr){
+  const day=allDays[k];if(!day||!day.tasks.length)return;
+  const dn=day.grid.filter(c=>c&&c.done).length,pct=day.tasks.length>0?Math.round(dn/day.tasks.length*100):0;
   document.getElementById('dd-title-txt').textContent=`${d} ${new Date(yr,mo-1,d).toLocaleDateString('en-IN',{month:'short'})} ${yr}`;
-  document.getElementById('dd-pct').textContent=pct+'%';
-  document.getElementById('dd-fill').style.width=pct+'%';
+  document.getElementById('dd-pct').textContent=pct+'%';document.getElementById('dd-fill').style.width=pct+'%';
   const tl=document.getElementById('dd-tasks');tl.innerHTML='';
   day.tasks.forEach((t,i)=>{
-    const ci=day.grid.findIndex(c=>c&&c.taskIdx===i);
-    const isDone=ci!==-1&&day.grid[ci].done;
-    const el=document.createElement('div');el.className='dd-task'+(isDone?' dd-done':'');
-    el.innerHTML=`<span>${isDone?'✅':'⬜'}</span><span class="dname">${esc(t.name)}</span>`;
-    tl.appendChild(el);
+    const ci=day.grid.findIndex(c=>c&&c.taskIdx===i);const done=ci!==-1&&day.grid[ci].done;
+    const el=document.createElement('div');el.className='dd-task'+(done?' dd-done':'');
+    el.innerHTML=`<span>${done?'✅':'⬜'}</span><span class="dname">${esc(t.name)}</span>`;tl.appendChild(el);
   });
-  const det=document.getElementById('day-detail');
-  det.classList.add('open');
-  det.scrollIntoView({behavior:'smooth',block:'nearest'});
+  const det=document.getElementById('day-detail');det.classList.add('open');det.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function closeDayDetail(){document.getElementById('day-detail').classList.remove('open');}
 function prevMonth(){viewMonth.setMonth(viewMonth.getMonth()-1);renderHistory();}
@@ -837,43 +837,34 @@ function nextMonth(){viewMonth.setMonth(viewMonth.getMonth()+1);renderHistory();
 function calcStreak(){
   let s=0,d=new Date();
   while(true){
-    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const day=db.days[key];
-    if(!day||!day.tasks.length)break;
-    if(!day.grid.filter(c=>c&&c.done).length)break;
+    const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const day=allDays[k];if(!day||!day.tasks.length)break;if(!day.grid.filter(c=>c&&c.done).length)break;
     s++;d.setDate(d.getDate()-1);
   }
   return s;
 }
 
-// ════════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════════
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function ago(iso){
-  const diff=Math.floor((Date.now()-new Date(iso))/60000);
-  if(diff<1)return'just now';if(diff<60)return diff+'m ago';return Math.floor(diff/60)+'h ago';
+// ══════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════
+async function boot(){
+  const sess=getSess();
+  if(sess?.id){
+    const {data,error}=await supa.from('users').select('*').eq('id',sess.id).single();
+    if(!error&&data){
+      me=data;
+      document.getElementById('u-name').textContent=me.name;
+      document.getElementById('u-avatar').textContent=me.name[0].toUpperCase();
+      await startApp(); return;
+    }
+  }
+  showLogin();
 }
 
-// ════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════
 document.getElementById('task-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+document.getElementById('login-name').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pd0').focus();});
 
-async function init() {
-  setDate();
-  buildGrid();
-  renderTaskList();
-  updateStats();
-  document.getElementById('iv-sel').value = db.intervalMin || 60;
-  document.getElementById('rem-toggle').className = 'toggle'+(db.reminderOn?' on':'');
-  updateClock();
-  setInterval(updateClock, 1000);
-  setInterval(renderTaskList, 60000);
-  await initSW();
-}
-
-init();
+boot();
 </script>
 </body>
 </html>
