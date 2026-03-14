@@ -361,12 +361,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="rrow"><span class="rlbl">Reminders on</span><div class="toggle on" id="rem-toggle" onclick="toggleRem()"></div></div>
     <div class="rrow">
       <span class="rlbl">Interval</span>
-      <select class="iv-sel" id="iv-sel" onchange="updateIv()">
-        <option value="60">Every 1 hr</option>
-        <option value="30">Every 30 min</option>
-        <option value="15">Every 15 min</option>
-        <option value="120">Every 2 hrs</option>
-      </select>
+    <select class="iv-sel" id="iv-sel" onchange="updateIv()">
+  <option value="5">Every 5 min</option>
+  <option value="15">Every 15 min</option>
+  <option value="30">Every 30 min</option>
+  <option value="60">Every 1 hr</option>
+  <option value="120">Every 2 hrs</option>
+</select>
     </div>
     <div class="rrow"><span class="rlbl">Test notification</span><button class="test-btn" onclick="sendTestPush()">🔔 Test</button></div>
   </div>
