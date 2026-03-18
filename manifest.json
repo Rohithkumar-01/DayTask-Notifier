@@ -2,7 +2,7 @@
   "name": "DayGrid — Daily Task Tracker",
   "short_name": "DayGrid",
   "description": "Track daily tasks with lockscreen reminders and monthly progress",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",

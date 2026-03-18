@@ -740,7 +740,7 @@ function showNotif(title,msg){
 function closeNotif(){document.getElementById('notif').classList.remove('show');}
 async function initSW(){
   if(!('serviceWorker' in navigator))return;
-  try{swReg=await navigator.serviceWorker.register('/sw.js');await checkPush();}catch(e){console.error(e);}
+  try{swReg=await navigator.serviceWorker.register('./sw.js');await checkPush();}catch(e){console.error(e);}
 }
 async function checkPush(){
   if(!('PushManager' in window)){updBanner('denied','⚠️ Push not supported');return;}

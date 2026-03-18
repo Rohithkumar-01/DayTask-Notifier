@@ -88,8 +88,8 @@ app.post('/test-notify/:userId', async (req, res) => {
     await sendPush(user.subscription, {
       title: '🔔 DayGrid Test',
       body: 'Notifications are working! You\'ll get reminders even when the app is closed.',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: 'https://rohithkumar-01.github.io/DayTask-Notifier/icon-192.png',
+      badge: 'https://rohithkumar-01.github.io/DayTask-Notifier/icon-192.png',
       tag: 'daygrid-test'
     });
     res.json({ success: true });
@@ -137,11 +137,11 @@ cron.schedule('* * * * *', async () => {
       await sendPush(user.subscription, {
         title: `⏰ DayGrid — ${timeStr}`,
         body: `${pending.length} task${pending.length > 1 ? 's' : ''} pending:\n${taskList}`,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
+        icon: 'https://rohithkumar-01.github.io/DayTask-Notifier/icon-192.png',
+        badge: 'https://rohithkumar-01.github.io/DayTask-Notifier/icon-192.png',
         tag: 'daygrid-reminder',
         renotify: true,
-        data: { url: '/' }
+        data: { url: 'https://rohithkumar-01.github.io/DayTask-Notifier/' }
       });
       console.log(`📬 Notified ${userId}: ${pending.length} pending tasks`);
     } catch (e) {

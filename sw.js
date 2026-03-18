@@ -18,11 +18,11 @@ self.addEventListener('push', e => {
   let data = {
     title: '⏰ DayGrid Reminder',
     body: 'You have pending tasks!',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: './icon-192.png',
+    badge: './icon-192.png',
     tag: 'daygrid-reminder',
     renotify: true,
-    data: { url: '/' }
+    data: { url: './' }
   };
 
   try {
@@ -34,8 +34,8 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || '/icon-192.png',
-      badge: data.badge || '/icon-192.png',
+      icon: data.icon || './icon-192.png',
+      badge: data.badge || './icon-192.png',
       tag: data.tag || 'daygrid',
       renotify: data.renotify || true,
       vibrate: [200, 100, 200, 100, 200],
@@ -43,7 +43,7 @@ self.addEventListener('push', e => {
         { action: 'open', title: '📋 Open App' },
         { action: 'dismiss', title: 'Dismiss' }
       ],
-      data: data.data || { url: '/' }
+      data: data.data || { url: './' }
     })
   );
 });
@@ -54,7 +54,7 @@ self.addEventListener('notificationclick', e => {
 
   if (e.action === 'dismiss') return;
 
-  const urlToOpen = e.notification.data?.url || '/';
+  const urlToOpen = e.notification.data?.url || './';
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
@@ -78,7 +78,7 @@ self.addEventListener('fetch', e => {
   e.respondWith(fetch(e.request).catch(() => {
     // If offline and navigating, show app shell
     if (e.request.mode === 'navigate') {
-      return caches.match('/');
+      return caches.match('./');
     }
   }));
 });
